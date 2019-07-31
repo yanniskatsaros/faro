@@ -20,14 +20,13 @@ class Table:
         """
         return self.data
 
-    def to_matrix(self):
+    def to_numpy(self):
         """
         Returns the data represented as a
         NumPy matrix of type: `numpy.ndarray`
         and shape (m, n).
         """
-        import numpy as np
-        return np.array(self.data)
+        return self.to_dataframe().to_numpy()
 
     def to_dict(self):
         """
