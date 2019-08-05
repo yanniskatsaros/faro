@@ -26,7 +26,7 @@ def test_to_list():
 
 def test_to_matrix():
     """Tests that results are returned as a numpy.ndarray"""
-    results = table.to_matrix()
+    results = table.to_numpy()
     assert(type(results) == ndarray)
 
 def test_to_dict():
