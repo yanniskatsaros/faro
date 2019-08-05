@@ -1,17 +1,33 @@
 from typing import List, Tuple
 
 class Table:
-    def __init__(self, data : List[Tuple], header=True):
+    def __init__(self, data : List[Tuple], header=True, columns=None):
         self.n_rows = len(data)
         self.n_cols = len(data[0])
         self.shape = (self.n_rows, self.n_cols)
 
+        # uses the column names from the first row of the data
         if header:
             self.columns = [str(c) for c in data[0]]
             self.data = [tuple(row) for row in data[1:]]
         else:
             self.columns = [str(i) for i in range(self.n_cols)]
             self.data = [tuple(row) for row in data]
+
+        # overrides the column names
+        if columns:
+            try:
+                self.columns = list(columns)
+            except TypeError as te:
+                raise te('Column names must be an iterable.')
+
+    def _repr_html_(self):
+        """
+        Return an HTML representation for the given table.
+
+        Intended for use with IPython notebook.
+        """
+        return self.to_dataframe()._repr_html_()
 
     def to_list(self):
         """
