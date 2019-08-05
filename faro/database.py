@@ -134,6 +134,45 @@ class Database:
         """
         raise NotImplementedError
 
+    def query(self, sql : str):
+        """
+        Executes the specified SQL statement
+        against the database and returns the
+        result set as a `faro.Table`.
+        
+        This method is useful for executing
+        "read" statements against the database 
+        that return rows of data. For operations
+        such as manually creating tables or
+        inserting data into tables, use
+        `faro.Database.execute` instead.
+
+        Parameters
+        ----------
+        sql : str
+            The SQL query to execute
+
+        Returns
+        -------
+        `faro.Table`
+
+        See Also
+        --------
+        faro.Database.execute : Executes an arbitrary SQL
+            statement against the database.
+        """
+        # check that a single statement was passed
+        expressions = [e for e in sql.split(';') if e != '']
+        if len(expressions) > 1:
+            raise ValueError('Can only execute a single statement at once.')
+
+        self._cursor.execute(sql)
+        return Table(
+            self._cursor.fetchall(),
+            header=False,
+            columns=[row[0] for row in self._cursor.description]
+        )
+
     @property
     def name(self):
         """The name of the database"""
