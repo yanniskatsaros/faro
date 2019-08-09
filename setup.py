@@ -16,7 +16,7 @@ keywords = [
 
 setup(
     name='faro',
-    version='0.0.1',  # see https://semver.org
+    version='0.0.2',  # see https://semver.org
     description='An SQL-focused data analysis library for Python.',
     long_description=long_description,
     long_description_content_type='text/markdown',
