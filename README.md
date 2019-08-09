@@ -1,5 +1,5 @@
 <p align="left">
-  <img width=50% src="docs/faro.png">
+  <img width=50% src="https://raw.githubusercontent.com/yanniskatsaros/faro/master/docs/faro.png">
 </p>
 
 # Overview
