@@ -132,7 +132,14 @@ class Database:
             the {object instance name}.db
 
         """
-        raise NotImplementedError
+        if name:
+            DB_NAME = name
+        else:
+            DB_NAME = f'{self._name}.db'
+
+        with connect(DB_NAME) as bck:
+            self._conn.backup(bck)
+        
 
     def query(self, sql : str):
         """
