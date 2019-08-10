@@ -1,8 +1,10 @@
-import pytest
+import os, pytest
 from numpy import ndarray
 from pandas import DataFrame
 
 import faro
+
+TEST_PATH = os.path.dirname(__file__)
 
 data = [
     ('fruit', 'id', 'in_stock', 'rating'),
@@ -37,3 +39,13 @@ def test_add_invalid_file():
     """Tests adding an invalid file to the database"""
     with pytest.raises(FileNotFoundError):
         db.add_table('invalid.csv', 'invalid')
+
+def test_export_sqlite():
+    """Tests saving the database to disk"""
+    DB_PATH = os.path.join(TEST_PATH, 'test.db')
+    db.to_sqlite(DB_PATH)
+
+    assert os.path.exists(DB_PATH)
+
+    # cleanup
+    os.remove(DB_PATH)
