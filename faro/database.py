@@ -1,5 +1,6 @@
 import os
 from sqlite3 import connect
+from typing import List, Callable, Iterable
 
 from pandas import (
     DataFrame, read_csv,
@@ -179,6 +180,70 @@ class Database:
             header=False,
             columns=[row[0] for row in self._cursor.description]
         )
+
+    def map(self,
+            func : Callable,
+            table : str,
+            columns : Iterable[str],
+            output : str,
+            overwrite=False) -> None:
+        """
+        Maps a function across each row for the
+        given set of columns and stores the result
+        as a new column in the given table.
+
+        Parameters
+        ----------
+        func : Callable
+            The function (callable) to map
+
+        table : str
+            The name of the table containing the columns
+
+        columns : Iterable[str]
+            The column(s) to map the function across
+
+        output : str
+            The name of the new column to save the result
+
+        overwrite : bool, default False
+            Overwrite the rows of the output column if it already exists
+            - `True` : overwrites each row in the output column, if it already exists
+            - `False` : raises `ValueError`
+
+        Raises
+        ------
+        `ValueError`
+            When `overwrite=False` and the output column already exists
+
+        """
+        if not isinstance(func, Callable):
+            raise TypeError(f'{func.__name__} is not callable')
+        if not isinstance(table, str):
+            raise TypeError('`table` must be of type str')
+        if not isinstance(output, str):
+            raise TypeError('`output` must be of type str')
+        try:
+            columns = [str(c) for c in columns]
+        except:
+            raise TypeError('`columns` must be of type Iterable[str]')
+
+        sql = f'SELECT * FROM {table}'
+        # use DataFrame for better auto-type detection and NaN coercion
+        df : DataFrame = self.query(sql).to_dataframe()
+
+        # add new column and save result to it
+        if (output in df.columns) and (overwrite == False):
+            msg = f"""Column already exists: {output}.
+            Set `overwrite = True` to overwrite all values in this column."""
+            raise ValueError(msg)
+
+        # each column is an argument passed into the func
+        result : list = [func(*row) for row in df[columns].values]
+        df[output] = result
+        self.add_table(df, name=table, if_exists='replace')
+        
+        return None
 
     @property
     def name(self):
