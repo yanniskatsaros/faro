@@ -1,6 +1,5 @@
 language: python
 python:
-  - "3.4"
   - "3.5"
   - "3.6"
   - "3.7"
@@ -17,7 +16,7 @@ install:
   - conda info -a
   # create the conda env
   - conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION pandas pytest
-  - conda activate test-env
+  - source activate test-env
   - python setup.py install
 script:
   - pytest
