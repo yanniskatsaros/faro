@@ -13,6 +13,7 @@ decorator==4.4.0
 defusedxml==0.6.0
 docutils==0.15.1
 entrypoints==0.3
+faro==0.0.2
 future==0.17.1
 idna==2.8
 importlib-metadata==0.17
