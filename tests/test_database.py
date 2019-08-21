@@ -18,11 +18,13 @@ db = faro.Database('tests')
 
 def test_add_csv():
     """Tests adding a CSV by name to the database"""
-    db.add_table('airports.csv', 'airports')
+    file = os.path.join(TEST_PATH, 'airports.csv')
+    db.add_table(file, 'airports')
 
 def test_add_json():
     """Tests adding a JSON by name to the database"""
-    db.add_table('cars.json', 'cars')
+    file = os.path.join(TEST_PATH, 'cars.json')
+    db.add_table(file, 'cars')
 
 def test_add_dataframe():
     """Tests adding a pandas.DataFrame to the database"""
@@ -38,7 +40,8 @@ def test_add_faro_table():
 def test_add_invalid_file():
     """Tests adding an invalid file to the database"""
     with pytest.raises(FileNotFoundError):
-        db.add_table('invalid.csv', 'invalid')
+        file = os.path.join(TEST_PATH, 'invalid.csv')
+        db.add_table(file, 'invalid')
 
 def test_export_sqlite():
     """Tests saving the database to disk"""
