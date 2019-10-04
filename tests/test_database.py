@@ -1,4 +1,5 @@
 import os, pytest
+import sqlite3
 from numpy import ndarray
 from pandas import DataFrame
 
@@ -52,3 +53,56 @@ def test_export_sqlite():
 
     # cleanup
     os.remove(DB_PATH)
+
+def test_import_sqlite():
+    """Test loading a database from disk"""
+    path = os.path.join(TEST_PATH, 'disk_test.db')
+
+    sqlite3.connect(path)
+
+    db = faro.Database.from_sqlite(path)
+
+    table = faro.Table(data)
+    db.add_table(table, 'other_fruits')
+
+    os.remove(path)
+
+def test_import_sqlite_has_name():
+    """Test loading a database from disk"""
+    path = os.path.join(TEST_PATH, 'disk_test.db')
+
+    sqlite3.connect(path)
+
+    db = faro.Database.from_sqlite(path)
+
+    assert db.name == 'disk_test'
+
+    os.remove(path)
+
+def test_import_sqlite_no_extension_has_name():
+    """Test loading a database from disk"""
+    path = os.path.join(TEST_PATH, 'disk_test')
+
+    sqlite3.connect(path)
+
+    db = faro.Database.from_sqlite(path)
+
+    assert db.name == 'disk_test'
+
+    os.remove(path)
+
+def test_import_sqlite_has_path():
+    """Test loading a database from disk"""
+    directory = os.path.join(TEST_PATH, 'test')
+    os.makedirs(directory, exist_ok=True)
+
+    path = os.path.join(directory, 'disk_test.db')
+
+    sqlite3.connect(path)
+
+    db = faro.Database.from_sqlite(path)
+
+    assert db.name == 'disk_test'
+
+    os.remove(path)
+    os.rmdir(directory)
