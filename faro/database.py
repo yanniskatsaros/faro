@@ -10,8 +10,8 @@ from pandas import (
 from .table import Table
 
 class Database:
-    def __init__(self, name : str):
-        self._conn = connect(':memory:')
+    def __init__(self, name : str, connection : str=':memory:'):
+        self._conn = connect(connection)
         self._cursor = self._conn.cursor()
         self._name = str(name)
         self._tables = []
@@ -23,6 +23,12 @@ class Database:
 
     def __repr__(self):
         return f'Database("{self._name}")'
+
+    @classmethod
+    def from_sqlite(cls, connection : str):
+        basename = os.path.basename(connection)
+        name, ext = os.path.splitext(basename)
+        return cls(name, connection=connection)
 
     def add_table(self, table, name, if_exists='fail', *args, **kwargs):
         """
