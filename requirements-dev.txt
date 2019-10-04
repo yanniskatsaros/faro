@@ -11,7 +11,7 @@ cmarkgfm==0.4.2
 cryptography==2.7
 decorator==4.4.0
 defusedxml==0.6.0
-docutils==0.15.1
+docutils==0.15.2
 entrypoints==0.3
 faro==0.0.2
 future==0.17.1
@@ -33,8 +33,8 @@ jupyterlab==1.0.4
 jupyterlab-server==1.0.0
 MarkupSafe==1.1.1
 mistune==0.8.4
-mkl-fft==1.0.12
-mkl-random==1.0.2
+mkl-fft==1.0.6
+mkl-random==1.0.1.1
 more-itertools==7.0.0
 nbconvert==5.5.0
 nbformat==4.4.0
@@ -67,7 +67,7 @@ readme-renderer==24.0
 requests==2.22.0
 requests-toolbelt==0.9.1
 Send2Trash==1.5.0
-sip==4.19.13
+sip==4.19.8
 six==1.12.0
 terminado==0.8.2
 testpath==0.4.2
