@@ -2,14 +2,13 @@
   <img width=40% src="https://raw.githubusercontent.com/yanniskatsaros/faro/master/docs/faro.png">
 </p>
 
-
 ![PyPI - License](https://img.shields.io/pypi/l/faro)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/faro)
 ![PyPI](https://img.shields.io/pypi/v/faro?color=blue)
 [![Build Status](https://travis-ci.com/yanniskatsaros/faro.svg?branch=master)](https://travis-ci.com/yanniskatsaros/faro)
 
 # Overview
-`faro` is a wrapper for the Python SQLite API, and aims to be a SQL-driven data analysis library for Python. It is intended to complement the existing data analysis packages in the Python eco-system, such as `numpy` and `pandas`. With `faro` you can use pure SQL to work with a collection of table objects in memory and easily interoperate with `numpy` and `pandas` when needed. Lastly, `faro` plays nicely with `IPython` so you can easily interact and explore your query results.
+`faro` is a fast, simple, and intuitive SQL-driven data analysis library for Python. It is built on top of `sqlite` and is intended to complement the existing data analysis packages in the Python eco-system, such as `numpy`, `pandas`, and `matplotlib` by providing easy interoperability between them. It also integrates with Jupyter by default to provide readable and interactive displays of queries and tables.
 
 # Usage
 Create a `Database` object and give it a name.
