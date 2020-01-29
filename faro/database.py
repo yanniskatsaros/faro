@@ -2,7 +2,7 @@ import os
 from sqlite3 import connect
 from typing import List, Callable, Iterable
 
-from pandas import (
+from pandas import (  # type: ignore
     DataFrame, read_csv,
     read_json, read_excel
 )
@@ -14,7 +14,7 @@ class Database:
         self._conn = connect(connection)
         self._cursor = self._conn.cursor()
         self._name = str(name)
-        self._tables = []
+        self._tables: List[str] = []
 
     def __del__(self):
         self._cursor.close()
@@ -48,7 +48,7 @@ class Database:
             as a filepath and will be parsed according
             to the file type. Current support includes:
                 - csv, json, xlsx
-            
+
             If a `pandas.DataFrame` or `faro.Table` is
             provided, it is directly parsed and added
             to the database.
@@ -117,7 +117,7 @@ class Database:
             raise TypeError(msg)
 
         # dispatch the function based upon the extension
-        read_func = funcs.get(file_ext)
+        read_func = funcs[file_ext]
         df = read_func(file, *args, **kwargs)
         self._parse_dataframe(df, name, if_exists)
 
@@ -146,16 +146,16 @@ class Database:
 
         with connect(DB_NAME) as bck:
             self._conn.backup(bck)
-        
+
 
     def query(self, sql : str):
         """
         Executes the specified SQL statement
         against the database and returns the
         result set as a `faro.Table`.
-        
+
         This method is useful for executing
-        "read" statements against the database 
+        "read" statements against the database
         that return rows of data. For operations
         such as manually creating tables or
         inserting data into tables, use
@@ -223,7 +223,7 @@ class Database:
             When `overwrite=False` and the output column already exists
 
         """
-        if not isinstance(func, Callable):
+        if not isinstance(func, Callable):  # type: ignore
             raise TypeError(f'{func.__name__} is not callable')
         if not isinstance(table, str):
             raise TypeError('`table` must be of type str')
@@ -248,7 +248,7 @@ class Database:
         result : list = [func(*row) for row in df[columns].values]
         df[output] = result
         self.add_table(df, name=table, if_exists='replace')
-        
+
         return None
 
     @property
@@ -264,4 +264,3 @@ class Database:
     def tables(self):
         """The names of all tables in the database"""
         return self._tables
-    
