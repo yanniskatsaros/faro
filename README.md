@@ -35,6 +35,11 @@ buses = pd.DataFrame({
 db.add_table(buses, name='buses')
 ```
 
+Alternatively, we can directly assign to a table name as a property of the `table` object. Using this method, however, will also replace the entire table as opposed to the options offered by `add_table()`
+```python
+db.table.buses = buses
+```
+
 We can now query against any table in the database using pure SQL, and easily interact with the results in a Jupyter Notebook.
 ```python
 sql = """
@@ -112,3 +117,51 @@ matrix = table.to_numpy()
 type(matrix)
 >>> numpy.ndarray
 ```
+
+We can also interact with the tables in our database by accessing them as properties of the `table` object. For example:
+
+```python
+db.table.buses
+```
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>from</th>
+      <th>to</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>Houston</td>
+      <td>San Antonio</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>Atlanta</td>
+      <td>Charlotte</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <th>3</th>
+      <td>Chicago</td>
+      <td>Milwaukee</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <th>4</th>
+      <td>Boston</td>
+      <td>Cape Cod</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <th>5</th>
+      <td>New York</td>
+      <td>Buffalo</td>
+    </tr>
+  </tbody>
+</table>

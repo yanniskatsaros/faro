@@ -299,7 +299,4 @@ class TableProperties:
             raise AttributeError(f'Table `{name}` does not exist in the database')
 
     def __setattr__(self, name, value):
-        if name in self.names:
-            self.db.add_table(value, name=name, if_exists='replace')
-        else:
-            raise AttributeError(f'Table `{name}` does not exist in the database')
+        self.db.add_table(value, name=name, if_exists='replace')
