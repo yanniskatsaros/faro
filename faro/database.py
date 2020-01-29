@@ -9,12 +9,14 @@ from pandas import (  # type: ignore
 
 from .table import Table
 
+
 class Database:
-    def __init__(self, name : str, connection : str=':memory:'):
+    def __init__(self, name: str, connection: str = ':memory:'):
         self._conn = connect(connection)
         self._cursor = self._conn.cursor()
         self._name = str(name)
         self._tables: List[str] = []
+        self.table = TableProperties(self)
 
     def __del__(self):
         self._cursor.close()
@@ -25,7 +27,7 @@ class Database:
         return f'Database("{self._name}")'
 
     @classmethod
-    def from_sqlite(cls, connection : str):
+    def from_sqlite(cls, connection: str):
         basename = os.path.basename(connection)
         name, ext = os.path.splitext(basename)
         return cls(name, connection=connection)
@@ -94,10 +96,24 @@ class Database:
             """
             raise TypeError(msg)
 
-        if name not in self._tables:
-           self._tables.append(name)
+        # def get_table():
+        #     return self.query(f'SELECT * FROM {name}').to_dataframe()
 
-    def _parse_file(self, file : str, name : str, if_exists : str, *args, **kwargs):
+        # def set_table(df: DataFrame):
+        #     self.add_table(df, name=name, if_exists='replace')
+
+        # setattr(self.table, name, TableProperty(self, name).__dict__[name])
+        # self.table.__dict__[name] = TableProperty(self, name)
+        # selfsetattr(self, 'name', name)
+        # setattr(self, 'db', database)
+        # self.table.__dict__[name] = property(get_table, set_table)
+
+        self.table.add_table(name)
+
+        if name not in self._tables:
+            self._tables.append(name)
+
+    def _parse_file(self, file: str, name: str, if_exists: str, *args, **kwargs):
         if not os.path.exists(file):
             raise FileNotFoundError(file)
 
@@ -105,9 +121,9 @@ class Database:
         _, file_ext = os.path.splitext(file)
 
         funcs = {
-            '.csv' : read_csv,
-            '.json' : read_json,
-            '.xlsx' : read_excel
+            '.csv': read_csv,
+            '.json': read_json,
+            '.xlsx': read_excel
         }
 
         if file_ext not in funcs.keys():
@@ -121,10 +137,10 @@ class Database:
         df = read_func(file, *args, **kwargs)
         self._parse_dataframe(df, name, if_exists)
 
-    def _parse_faro_table(self, table : Table, name : str, if_exists : str):
+    def _parse_faro_table(self, table: Table, name: str, if_exists: str):
         self._parse_dataframe(table.to_dataframe(), name, if_exists)
 
-    def _parse_dataframe(self, df : DataFrame, name : str, if_exists : str):
+    def _parse_dataframe(self, df: DataFrame, name: str, if_exists: str):
         df.to_sql(name, self._conn, if_exists=if_exists, index=False)
 
     def to_sqlite(self, name=None):
@@ -147,8 +163,7 @@ class Database:
         with connect(DB_NAME) as bck:
             self._conn.backup(bck)
 
-
-    def query(self, sql : str):
+    def query(self, sql: str):
         """
         Executes the specified SQL statement
         against the database and returns the
@@ -188,10 +203,10 @@ class Database:
         )
 
     def map(self,
-            func : Callable,
-            table : str,
-            columns : Iterable[str],
-            output : str,
+            func: Callable,
+            table: str,
+            columns: Iterable[str],
+            output: str,
             overwrite=False) -> None:
         """
         Maps a function across each row for the
@@ -236,7 +251,7 @@ class Database:
 
         sql = f'SELECT * FROM {table}'
         # use DataFrame for better auto-type detection and NaN coercion
-        df : DataFrame = self.query(sql).to_dataframe()
+        df: DataFrame = self.query(sql).to_dataframe()
 
         # add new column and save result to it
         if (output in df.columns) and (overwrite == False):
@@ -245,7 +260,7 @@ class Database:
             raise ValueError(msg)
 
         # each column is an argument passed into the func
-        result : list = [func(*row) for row in df[columns].values]
+        result: list = [func(*row) for row in df[columns].values]
         df[output] = result
         self.add_table(df, name=table, if_exists='replace')
 
@@ -257,10 +272,34 @@ class Database:
         return self._name
 
     @name.setter
-    def name(self, name : str):
+    def name(self, name: str):
         self._name = name
 
     @property
     def tables(self):
         """The names of all tables in the database"""
         return self._tables
+
+
+class TableProperties:
+    """
+    An class to access Tables as properties.
+    """
+    def __init__(self, database: Database):
+        self.__dict__['db'] = database
+        self.__dict__['names'] = []
+
+    def add_table(self, name: str):
+        self.__dict__['names'].append(name)
+
+    def __getattr__(self, name):
+        if name in self.names:
+            return self.db.query(f'SELECT * FROM {name}').to_dataframe()
+        else:
+            raise AttributeError(f'Table `{name}` does not exist in the database')
+
+    def __setattr__(self, name, value):
+        if name in self.names:
+            self.db.add_table(value, name=name, if_exists='replace')
+        else:
+            raise AttributeError(f'Table `{name}` does not exist in the database')
