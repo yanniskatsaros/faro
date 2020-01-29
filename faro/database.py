@@ -96,20 +96,6 @@ class Database:
             """
             raise TypeError(msg)
 
-        # def get_table():
-        #     return self.query(f'SELECT * FROM {name}').to_dataframe()
-
-        # def set_table(df: DataFrame):
-        #     self.add_table(df, name=name, if_exists='replace')
-
-        # setattr(self.table, name, TableProperty(self, name).__dict__[name])
-        # self.table.__dict__[name] = TableProperty(self, name)
-        # selfsetattr(self, 'name', name)
-        # setattr(self, 'db', database)
-        # self.table.__dict__[name] = property(get_table, set_table)
-
-        self.table.add_table(name)
-
         if name not in self._tables:
             self._tables.append(name)
 
@@ -287,13 +273,9 @@ class TableProperties:
     """
     def __init__(self, database: Database):
         self.__dict__['db'] = database
-        self.__dict__['names'] = []
-
-    def add_table(self, name: str):
-        self.__dict__['names'].append(name)
 
     def __getattr__(self, name):
-        if name in self.names:
+        if name in self.db._tables:
             return self.db.query(f'SELECT * FROM {name}').to_dataframe()
         else:
             raise AttributeError(f'Table `{name}` does not exist in the database')
