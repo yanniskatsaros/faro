@@ -14,12 +14,14 @@ class Table:
             self.columns = [str(i) for i in range(self.n_cols)]
             self.data = [tuple(row) for row in data]
 
+
+
         # overrides the column names
         if columns:
             try:
                 self.columns = list(columns)
             except TypeError as te:
-                raise te('Column names must be an iterable.')
+                raise te('Column names must be an iterable.')  # type: ignore
 
     def _repr_html_(self):
         """
@@ -54,7 +56,7 @@ class Table:
         out = {}
         for i, col in enumerate(self.columns):
             out[col] = [row[i] for row in self.data]
-        
+
         return out
 
     def to_dataframe(self):
@@ -62,5 +64,5 @@ class Table:
         Returns the data represented as
         a `pandas.DataFrame`
         """
-        from pandas import DataFrame
+        from pandas import DataFrame  # type: ignore
         return DataFrame(self.to_dict())

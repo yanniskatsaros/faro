@@ -2,19 +2,21 @@ import os
 from sqlite3 import connect
 from typing import List, Callable, Iterable
 
-from pandas import (
+from pandas import (  # type: ignore
     DataFrame, read_csv,
     read_json, read_excel
 )
 
 from .table import Table
 
+
 class Database:
-    def __init__(self, name : str, connection : str=':memory:'):
+    def __init__(self, name: str, connection: str = ':memory:'):
         self._conn = connect(connection)
         self._cursor = self._conn.cursor()
         self._name = str(name)
-        self._tables = []
+        self._tables: List[str] = []
+        self.table = TableProperties(self)
 
     def __del__(self):
         self._cursor.close()
@@ -25,7 +27,7 @@ class Database:
         return f'Database("{self._name}")'
 
     @classmethod
-    def from_sqlite(cls, connection : str):
+    def from_sqlite(cls, connection: str):
         basename = os.path.basename(connection)
         name, ext = os.path.splitext(basename)
         return cls(name, connection=connection)
@@ -48,7 +50,7 @@ class Database:
             as a filepath and will be parsed according
             to the file type. Current support includes:
                 - csv, json, xlsx
-            
+
             If a `pandas.DataFrame` or `faro.Table` is
             provided, it is directly parsed and added
             to the database.
@@ -95,9 +97,9 @@ class Database:
             raise TypeError(msg)
 
         if name not in self._tables:
-           self._tables.append(name)
+            self._tables.append(name)
 
-    def _parse_file(self, file : str, name : str, if_exists : str, *args, **kwargs):
+    def _parse_file(self, file: str, name: str, if_exists: str, *args, **kwargs):
         if not os.path.exists(file):
             raise FileNotFoundError(file)
 
@@ -105,9 +107,9 @@ class Database:
         _, file_ext = os.path.splitext(file)
 
         funcs = {
-            '.csv' : read_csv,
-            '.json' : read_json,
-            '.xlsx' : read_excel
+            '.csv': read_csv,
+            '.json': read_json,
+            '.xlsx': read_excel
         }
 
         if file_ext not in funcs.keys():
@@ -117,14 +119,14 @@ class Database:
             raise TypeError(msg)
 
         # dispatch the function based upon the extension
-        read_func = funcs.get(file_ext)
+        read_func = funcs[file_ext]
         df = read_func(file, *args, **kwargs)
         self._parse_dataframe(df, name, if_exists)
 
-    def _parse_faro_table(self, table : Table, name : str, if_exists : str):
+    def _parse_faro_table(self, table: Table, name: str, if_exists: str):
         self._parse_dataframe(table.to_dataframe(), name, if_exists)
 
-    def _parse_dataframe(self, df : DataFrame, name : str, if_exists : str):
+    def _parse_dataframe(self, df: DataFrame, name: str, if_exists: str):
         df.to_sql(name, self._conn, if_exists=if_exists, index=False)
 
     def to_sqlite(self, name=None):
@@ -146,16 +148,15 @@ class Database:
 
         with connect(DB_NAME) as bck:
             self._conn.backup(bck)
-        
 
-    def query(self, sql : str):
+    def query(self, sql: str):
         """
         Executes the specified SQL statement
         against the database and returns the
         result set as a `faro.Table`.
-        
+
         This method is useful for executing
-        "read" statements against the database 
+        "read" statements against the database
         that return rows of data. For operations
         such as manually creating tables or
         inserting data into tables, use
@@ -188,10 +189,10 @@ class Database:
         )
 
     def map(self,
-            func : Callable,
-            table : str,
-            columns : Iterable[str],
-            output : str,
+            func: Callable,
+            table: str,
+            columns: Iterable[str],
+            output: str,
             overwrite=False) -> None:
         """
         Maps a function across each row for the
@@ -223,7 +224,7 @@ class Database:
             When `overwrite=False` and the output column already exists
 
         """
-        if not isinstance(func, Callable):
+        if not isinstance(func, Callable):  # type: ignore
             raise TypeError(f'{func.__name__} is not callable')
         if not isinstance(table, str):
             raise TypeError('`table` must be of type str')
@@ -236,7 +237,7 @@ class Database:
 
         sql = f'SELECT * FROM {table}'
         # use DataFrame for better auto-type detection and NaN coercion
-        df : DataFrame = self.query(sql).to_dataframe()
+        df: DataFrame = self.query(sql).to_dataframe()
 
         # add new column and save result to it
         if (output in df.columns) and (overwrite == False):
@@ -245,10 +246,10 @@ class Database:
             raise ValueError(msg)
 
         # each column is an argument passed into the func
-        result : list = [func(*row) for row in df[columns].values]
+        result: list = [func(*row) for row in df[columns].values]
         df[output] = result
         self.add_table(df, name=table, if_exists='replace')
-        
+
         return None
 
     @property
@@ -257,11 +258,27 @@ class Database:
         return self._name
 
     @name.setter
-    def name(self, name : str):
+    def name(self, name: str):
         self._name = name
 
     @property
     def tables(self):
         """The names of all tables in the database"""
         return self._tables
-    
+
+
+class TableProperties:
+    """
+    An class to access Tables as properties.
+    """
+    def __init__(self, database: Database):
+        self.__dict__['db'] = database
+
+    def __getattr__(self, name):
+        if name in self.db._tables:
+            return self.db.query(f'SELECT * FROM {name}').to_dataframe()
+        else:
+            raise AttributeError(f'Table `{name}` does not exist in the database')
+
+    def __setattr__(self, name, value):
+        self.db.add_table(value, name=name, if_exists='replace')
