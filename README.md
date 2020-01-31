@@ -1,5 +1,5 @@
 <p align="left">
-  <img width=40% src="https://raw.githubusercontent.com/yanniskatsaros/faro/master/docs/faro.png">
+  <img width=40% src="https://raw.githubusercontent.com/yanniskatsaros/faro/master/docs/faro.svg?sanitize=true">
 </p>
 
 ![PyPI - License](https://img.shields.io/pypi/l/faro)
