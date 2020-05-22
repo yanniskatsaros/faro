@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
+from shutil import copyfile
 from sqlite3 import connect
-from typing import List, Callable, Iterable
+from typing import List, Callable, Iterable, Optional, Union
 
 from pandas import (  # type: ignore
     DataFrame, read_csv,
@@ -9,9 +11,16 @@ from pandas import (  # type: ignore
 
 from .table import Table
 
+FARO_SESSION_PATH = Path('.faro.db').resolve()
 
 class Database:
-    def __init__(self, name: str, connection: str = ':memory:'):
+    def __init__(self, name: str, connection: Optional[Union[str, Path]]=None):
+        if not connection:
+            # creates a hidden file for the session
+            self._session_path = FARO_SESSION_PATH
+            connection = FARO_SESSION_PATH
+
+        self._session_path = connection
         self._conn = connect(connection)
         self._cursor = self._conn.cursor()
         self._name = str(name)
@@ -23,13 +32,17 @@ class Database:
         self._conn.close()
         del self._cursor, self._conn
 
+        # cleanup the session files only if we created them
+        if os.path.exists(FARO_SESSION_PATH):
+            os.remove(FARO_SESSION_PATH)
+
     def __repr__(self):
         return f'Database("{self._name}")'
 
     @classmethod
     def from_sqlite(cls, connection: str):
         basename = os.path.basename(connection)
-        name, ext = os.path.splitext(basename)
+        name, _ = os.path.splitext(basename)
         return cls(name, connection=connection)
 
     def add_table(self, table, name, if_exists='fail', *args, **kwargs):
@@ -129,16 +142,16 @@ class Database:
     def _parse_dataframe(self, df: DataFrame, name: str, if_exists: str):
         df.to_sql(name, self._conn, if_exists=if_exists, index=False)
 
-    def to_sqlite(self, name=None):
+    def to_sqlite(self, name=None) -> None:
         """
         Saves the database inclduing all tables, data, and
         metadata as a SQLite flat file.
 
         Parameters
         ----------
-        name : str, optional, default `{name}.db`
+        name : str, optional, default `{self.name}.db`
             The name of the database. Default is
-            the {object instance name}.db
+            `{self.name}.db`
 
         """
         if name:
@@ -146,9 +159,10 @@ class Database:
         else:
             DB_NAME = f'{self._name}.db'
 
-        with connect(DB_NAME) as bck:
-            self._conn.backup(bck)
-
+        # simply copy the flat file from the session to the dest
+        DB_PATH = Path(DB_NAME).resolve()
+        copyfile(self._session_path, DB_PATH)
+        
     def query(self, sql: str):
         """
         Executes the specified SQL statement
