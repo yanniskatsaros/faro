@@ -11,17 +11,16 @@ from pandas import (  # type: ignore
 
 from .table import Table
 
-FARO_SESSION_PATH = Path('.faro.db').resolve()
+FARO_SESSION_PATH = '.faro.db'
 
 class Database:
     def __init__(self, name: str, connection: Optional[Union[str, Path]]=None):
         if not connection:
             # creates a hidden file for the session
-            self._session_path = FARO_SESSION_PATH
             connection = FARO_SESSION_PATH
 
-        self._session_path = connection
-        self._conn = connect(connection)
+        self._session_path: Path = Path(connection).resolve()
+        self._conn = connect(str(connection))
         self._cursor = self._conn.cursor()
         self._name = str(name)
         self._tables: List[str] = []
