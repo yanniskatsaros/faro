@@ -1,9 +1,30 @@
 [tool.poetry]
 name = "faro"
-version = "0.0.2"
+version = "0.0.4"
 description = "An SQL-focused data analysis library for Python"
 authors = ["Yannis Katsaros <yanniskatsaros@hotmail.com>"]
+maintainers = ["Yannis Katsaros <yanniskatsaros@hotmail.com>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/yanniskatsaros/faro"
+repository = "https://github.com/yanniskatsaros/faro"
+documentation = "https://github.com/yanniskatsaros/faro/docs"
+keywords = [
+    "sql",
+    "python",
+    "data-analysis",
+    "data-science",
+    "database"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6.1",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 2 - Pre-Alpha"
+]
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
