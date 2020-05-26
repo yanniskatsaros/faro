@@ -1,2 +1,2 @@
-from .table import Table
+from .table import Table, table
 from .database import Database
