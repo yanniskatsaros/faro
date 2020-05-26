@@ -1,17 +1,31 @@
 import os
+import csv
+from datetime import date, datetime
 from pathlib import Path
 from shutil import copyfile
 from sqlite3 import connect
-from typing import List, Callable, Iterable, Optional, Union
+from typing import (
+    List,
+    Callable,
+    Iterable,
+    Optional,
+    Union,
+    Any,
+    Type,
+    Sequence
+)
 
 from pandas import (  # type: ignore
     DataFrame, read_csv,
     read_json, read_excel
 )
+from pydantic import BaseModel
 
 from .table import Table
 
 FARO_SESSION_PATH = '.faro.db'
+
+TableInput = Union[str, DataFrame, Table]
 
 class Database:
     def __init__(self, name: str, connection: Optional[Union[str, Path]]=None):
@@ -44,7 +58,15 @@ class Database:
         name, _ = os.path.splitext(basename)
         return cls(name, connection=connection)
 
-    def add_table(self, table, name, if_exists='fail', *args, **kwargs):
+    def add_table(
+            self,
+            table: TableInput,
+            name: str,
+            if_exists: str='fail',
+            Model: Optional[Type]=None,
+            *args,
+            **kwargs
+        ):
         """
         Load the contents of a file, or table
         to the current database.
@@ -77,6 +99,11 @@ class Database:
             - replace: drop the existing table before adding it
             - append: insert new values to the existing table
 
+        Model: Optional[Type]
+            A class definition decorated with @table that defines
+            column types and default values that are used to
+            parse a source file and generate the SQL schema for it.
+
         Raises
         ------
         `ValueError`
@@ -85,6 +112,9 @@ class Database:
         `FileNotFoundError`
             The path to the file specified is invalid.
 
+        `TypeError`
+            If the `Model` provided is not properly wrapped with @table
+
         """
         if if_exists not in ('fail', 'replace', 'append'):
             raise ValueError('Valid options: {"fail", "replace", "append"}')
@@ -92,9 +122,23 @@ class Database:
         if name in self._tables and if_exists == 'fail':
             raise ValueError(f'Table: {name} already exists in database.')
 
+        if Model:
+            if not issubclass(Model, BaseModel):
+                msg = (
+                    'Invalid model specified. Use the @table decorator to '
+                    'wrap your class definition.\n\n'
+                    'from faro import table\n'
+                    '@table\n'
+                    'class Person:\n'
+                    '    name: str\n'
+                    '    age: int\n'
+                    '    salary: float = 5000.0'
+                )
+                raise TypeError(msg)
+
         # handle types appropriately
         if isinstance(table, (str)):
-            self._parse_file(table, name, if_exists, *args, **kwargs)
+            self._parse_file(table, name, if_exists, Model, *args, **kwargs)
         elif isinstance(table, (Table)):
             self._parse_faro_table(table, name, if_exists)
         elif isinstance(table, (DataFrame)):
@@ -111,12 +155,20 @@ class Database:
         if name not in self._tables:
             self._tables.append(name)
 
-    def _parse_file(self, file: str, name: str, if_exists: str, *args, **kwargs):
+    def _parse_file(self, file: str, name: str, if_exists: str, Model: Optional[Type], *args, **kwargs):
         if not os.path.exists(file):
             raise FileNotFoundError(file)
 
         # split file name and extension
         _, file_ext = os.path.splitext(file)
+
+        # temporary ugliness
+        if file_ext == '.csv':
+            if Model is None:
+                msg = '`Model` cannot be None if parsing a table from a source file.'
+                raise TypeError(msg)
+
+            return self._parse_csv(file, Model, if_exists, *args, **kwargs)
 
         funcs = {
             '.csv': read_csv,
@@ -134,6 +186,41 @@ class Database:
         read_func = funcs[file_ext]
         df = read_func(file, *args, **kwargs)
         self._parse_dataframe(df, name, if_exists)
+
+    def _parse_csv(self, file: str, Model: Type, if_exists: str, *args, **kwargs) -> None:
+        # the header/column names of the file provided by the pydantic base model
+        if not issubclass(Model, BaseModel):
+            raise TypeError('Invalid model specified. Use the @table decorator to wrap your class.')
+        columns: List[str] = Model.columns()
+
+        # csv reader prefers None to \n as default
+        newline: Optional[str] = kwargs.get('newline', None)
+
+        # the line number containing the header column
+        header: Optional[Union[int, bool]] = kwargs.get('header', 0)
+        if isinstance(header, bool) or (header is None):
+            header: int = 0 if header is True else -1
+
+        # check whether we need to define a new table schema
+        if if_exists != 'append':
+            # drop the existing table and create a new one
+            self._cursor.execute(Model.sql_drop())
+            self._cursor.execute(Model.sql_schema())
+
+        # stream the contents of the file
+        with open(file, 'r', newline=newline) as f:
+            reader = csv.reader(f, **kwargs)
+            # exhaust the reader until the first data record
+            for _ in range(header + 1):
+                next(reader)
+            
+            # used to convert model: Model -> tuple
+            to_tuple = lambda p: tuple(item[1] for item in tuple(p))
+
+            # read and parse the contents of each row as a generator
+            rows: Sequence = (to_tuple(Model(**dict(zip(columns, row)))) for row in reader)
+            # and exhaust the generator by inserting into the database
+            self._cursor.executemany(Model.sql_insert(), rows)
 
     def _parse_faro_table(self, table: Table, name: str, if_exists: str):
         self._parse_dataframe(table.to_dataframe(), name, if_exists)
