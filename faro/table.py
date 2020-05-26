@@ -122,7 +122,6 @@ def table(cls: Type, name: Optional[str]=None):
     if not name:
         name: str = cls.__name__.lower()
 
-    @staticmethod
     def sql_schema() -> str:
         """
         Generates a SQLite3 compatible table schema
@@ -134,6 +133,7 @@ def table(cls: Type, name: Optional[str]=None):
             Table schema definition
 
         """
+        # FIXME fails if the default values provided is `None`
         def field_to_column(f: ModelField) -> str:
             REQUIRED = {
                 True: 'NOT NULL',
@@ -146,7 +146,6 @@ def table(cls: Type, name: Optional[str]=None):
 
         return f'CREATE TABLE IF NOT EXISTS {name} (\n{schema}\n)'    
 
-    @staticmethod
     def sql_insert() -> str:
         """
         Generates a SQLite3 compatible SQL insert statement
@@ -163,16 +162,16 @@ def table(cls: Type, name: Optional[str]=None):
         
         return f'INSERT INTO {name}({cols}) VALUES ({wildcards})'
 
-    @staticmethod
     def sql_drop() -> str:
-        return f'DROP TABLE {name} IF NOT EXISTS'
+        return f'DROP TABLE IF EXISTS {name}'
 
     return type(
         cls.__name__,
         (cls, ),
         {
+            'columns': lambda: list(cls.__fields__.keys()),
             'sql_schema': sql_schema,
             'sql_insert': sql_insert,
-            'sql_drop': sql_drop
+            'sql_drop': sql_drop,
         }
     )
